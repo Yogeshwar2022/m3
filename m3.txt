@@ -1,0 +1,94 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from keras.models import Sequential
+from keras.layers import Dense
+from sklearn.metrics import confusion_matrix, accuracy_score, classification_report
+
+# Step 1: Read the dataset
+df = pd.read_csv("Churn_Modelling.csv")
+
+# Step 2: Prepare the data
+# Drop unnecessary columns
+df = df.drop(['RowNumber', 'Surname', 'CustomerId'], axis=1)
+
+# Step 3: Convert Categorical Variables (Geography and Gender) to One-Hot Encoding
+
+states = pd.get_dummies(df['Geography'], drop_first=True)
+gender = pd.get_dummies(df['Gender'], drop_first=True)
+df = pd.concat([df, gender, states], axis=1)
+df = df.drop(['Geography', 'Gender'], axis=1)
+
+# Step 4: Split the data into training and testing sets
+X = df.drop(['Exited'], axis=1)
+y = df['Exited']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=42)
+
+# Step 5: Normalize the data
+sc = StandardScaler()
+X_train = sc.fit_transform(X_train)
+X_test = sc.transform(X_test)
+
+
+
+# Step 6: Build the Neural Network model
+classifier = Sequential()
+classifier.add(Dense(activation="relu", input_dim=11, units=6, kernel_initializer="uniform"))
+classifier.add(Dense(activation="relu", units=6, kernel_initializer="uniform"))
+classifier.add(Dense(activation="sigmoid", units=1, kernel_initializer="uniform"))
+classifier.compile(optimizer="adam", loss='binary_crossentropy', metrics=['accuracy']) 
+# adam=adaptive estimation model
+
+
+# Step 7: Fit the model and make predictions
+classifier.fit(X_train, y_train, batch_size=10, epochs=50)
+y_pred = classifier.predict(X_test)
+y_pred = (y_pred > 0.5)
+
+# Step 8: Evaluate the model
+cm = confusion_matrix(y_test, y_pred)
+accuracy = accuracy_score(y_test, y_pred)
+
+# Visualize the confusion matrix
+sns.heatmap(cm, annot=True, fmt='d')
+plt.xlabel('Predicted')
+plt.ylabel('True')
+plt.title("Confusion Matrix")
+plt.show()
+
+# Print results
+print("Accuracy Score:", accuracy)
+print("Classification Report:")
+print(classification_report(y_test, y_pred))
+
+
+# # Histogram of Target Variable (Churned vs. Not Churned)
+# plt.figure(figsize=(8, 6))
+# sns.countplot(data=df, x='Exited')
+# plt.title('Distribution of Churned (1) vs. Not Churned (0)')
+# plt.xlabel('Churned')
+# plt.ylabel('Count')
+# plt.show()
+
+# # Pairplot of Selected Features
+# sns.pairplot(data=df, vars=['CreditScore', 'Age', 'Balance', 'NumOfProducts'], hue='Exited')
+# plt.title('Pairplot of Selected Features by Churn')
+# plt.show()
+
+# # Learning Curve During Model Training
+# history = classifier.fit(X_train, y_train, batch_size=10, epochs=50, validation_split=0.2)
+# plt.figure(figsize=(10, 6))
+# plt.plot(history.history['loss'], label='Training Loss')
+# plt.plot(history.history['val_loss'], label='Validation Loss')
+# plt.title('Learning Curve')
+# plt.xlabel('Epochs')
+# plt.ylabel('Loss')
+# plt.legend()
+# plt.show()
+
+
+
+
